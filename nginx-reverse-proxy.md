@@ -1,3 +1,4 @@
+Usful Link: https://ssl-config.mozilla.org/#server=nginx&version=1.18.0&config=intermediate&openssl=3.0.2&ocsp=false&guideline=5.7
 
 ```
 sudo apt-get update
