@@ -1,5 +1,22 @@
 
-
+```
+sudo apt-get update
+```
+```
+sudo apt-get upgrade
+```
+```
+sudo apt install nginx
+```
+```
+systemctl start nginx
+```
+```
+systemctl enable nginx
+```
+```
+touch /etc/nginx/sites-available/vhost && nano /etc/nginx/sites-available/vhost
+```
 ```
 
 server {
@@ -43,3 +60,15 @@ server {
 }
 
 ```
+```
+ln -s /etc/nginx/sites-available/vhost /etc/nginx/sites-enabled
+```
+```
+nginx -t
+```
+```
+systemctl restart nginx
+```
+```
+ufw allow 80/tcp
+ufw allow 443/tcp 
