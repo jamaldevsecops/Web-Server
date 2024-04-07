@@ -106,4 +106,10 @@ systemctl restart nginx
 ```
 ```
 ufw allow 80/tcp
-ufw allow 443/tcp 
+ufw allow 443/tcp
+```
+Access the Applicaitons 
+```
+https://myapp.apsis.local/app1/
+https://myapp.apsis.local/app2/
+
