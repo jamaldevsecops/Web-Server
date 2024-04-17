@@ -17,6 +17,9 @@ Default Administrator Credentials:
 Email:    admin@example.com
 Password: changeme
 ```
+
+Adding HTTP Security Headers (Not always recommended) 
+-----------------------------------------------------
 N.B- If you want to add all http security headers, then follow the below steps:
 Ref: https://geekscircuit.com/nginx-proxy-manager
 
