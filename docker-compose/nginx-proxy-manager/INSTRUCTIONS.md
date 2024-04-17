@@ -1,4 +1,7 @@
 Ref: https://nginxproxymanager.com/setup/#using-mysql-mariadb-database
+
+Nginx Proxy Manager Configuration
+---------------------------------
 Create the required content directory. 
 ```
 sudo mkdir nginx-proxy-manager
