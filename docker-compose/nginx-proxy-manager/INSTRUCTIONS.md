@@ -1,4 +1,5 @@
 Ref: https://nginxproxymanager.com/setup/#using-mysql-mariadb-database
+Create the required content directory. 
 ```
 sudo mkdir nginx-proxy-manager
 sudo docker-compose.yml nginx-proxy-manager/
@@ -17,11 +18,14 @@ N.B- If you want to add all http security headers, then follow the below steps:
 Ref: https://geekscircuit.com/nginx-proxy-manager
 
 1. add the following docker volume in docker-compose file.
-   ./_hsts.conf:/app/templates/_hsts.conf:ro
-3. Create a file called _hsts.conf in your proxy-manager directory and copy paste below code.
-   cd nginx-proxy-manager && vim _hsts.conf
-   ```
-   {% if certificate and certificate_id > 0 -%}
+./_hsts.conf:/app/templates/_hsts.conf:ro
+
+2. Create a file called _hsts.conf in your proxy-manager directory and copy paste below code.
+```
+cd nginx-proxy-manager && vim _hsts.conf
+```
+```
+{% if certificate and certificate_id > 0 -%}
 {% if ssl_forced == 1 or ssl_forced == true %}
 {% if hsts_enabled == 1 or hsts_enabled == true %}
   # HSTS (ngx_http_headers_module is required) (63072000 seconds = 2 years)
@@ -38,5 +42,9 @@ Ref: https://geekscircuit.com/nginx-proxy-manager
 {% endif %}
 {% endif %}
 {% endif %}
-   ```
-5. dsf
+```
+```
+docker-compose down
+docker-compose pull
+docker-compose up -d
+
