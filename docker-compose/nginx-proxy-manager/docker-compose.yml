@@ -22,7 +22,7 @@ services:
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
-      - ./_hsts.conf:/app/templates/_hsts.conf:ro
+      #- ./_hsts.conf:/app/templates/_hsts.conf:ro
     depends_on:
       - db
 
