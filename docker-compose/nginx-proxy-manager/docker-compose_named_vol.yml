@@ -1,0 +1,54 @@
+version: '3.8'
+services:
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy-manager
+    restart: always
+    ports:
+      - '8080:80'
+      - '8090:443'
+      - '81:81' # Admin Web Port
+    environment:
+      # Mysql/Maria connection parameters:
+      DB_MYSQL_HOST: "npm-01.apsis.local"
+      DB_MYSQL_PORT: 1011
+      DB_MYSQL_USER: "npm"
+      DB_MYSQL_PASSWORD: "npm"
+      DB_MYSQL_NAME: "npm"
+      DISABLE_IPV6: 'true'
+      X_FRAME_OPTIONS: "sameorigin"
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+      #- sec_head/_hsts.conf:/app/templates/_hsts.conf:ro
+
+  mysql:
+    image: mariadb:10.11.5
+    container_name: mariadb_10.11
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 'npm'
+      MYSQL_DATABASE: 'npm'
+      MYSQL_USER: 'npm'
+      MYSQL_PASSWORD: 'npm'
+      MARIADB_AUTO_UPGRADE: '1'
+    ports:
+      - "1011:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - mariadb_config:/etc/mysql/conf.d
+      - mariadb_log:/var/log/mysql
+
+    networks:
+      - npm-net
+
+networks:
+  npm-net:
+    driver: bridge
+    
+volumes:
+  npm_data:
+  npm_letsencrypt:  
+  mariadb_data:
+  mariadb_config:
+  mariadb_log:   
