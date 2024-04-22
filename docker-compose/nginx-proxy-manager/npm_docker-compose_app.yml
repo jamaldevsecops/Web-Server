@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy-manager
+    restart: always
+    ports:
+      - '8080:80'
+      - '8090:443'
+      - '81:81' # Admin Web Port
+    environment:
+      # Mysql/Maria connection parameters:
+      DB_MYSQL_HOST: "192.168.20.201"
+      DB_MYSQL_PORT: 3103
+      DB_MYSQL_USER: "npm"
+      DB_MYSQL_PASSWORD: "npm"
+      DB_MYSQL_NAME: "npm"
+      DISABLE_IPV6: 'true'
+      X_FRAME_OPTIONS: "sameorigin"
+    volumes:
+      - ./npm/data:/data
+      - ./npm/letsencrypt:/etc/letsencrypt
+        #- ./_hsts.conf:/app/templates/_hsts.conf:ro
+
+    networks:
+      - npm-net
+
+networks:
+  npm-net:
