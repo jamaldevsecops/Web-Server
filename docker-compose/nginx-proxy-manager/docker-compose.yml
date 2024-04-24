@@ -44,4 +44,3 @@ services:
 
 networks:
   npm-net:
-    driver: bridge
