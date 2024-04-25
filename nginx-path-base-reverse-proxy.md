@@ -70,6 +70,16 @@ server {
     listen 443 ssl http2;
     server_name myapp.apsis.local;
 
+    location / {
+        proxy_pass http://192.168.254.22:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_intercept_errors on;
+        error_page 502 = https://error.apsissolutions.com$request_uri;
+    }
+
     location /app1/ {
         proxy_pass http://192.168.254.22:8081/;
         proxy_set_header Host $host;
