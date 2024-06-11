@@ -4,9 +4,9 @@ Nginx Proxy Manager Configuration
 ---------------------------------
 Create the required content directory. 
 ```
-sudo mkdir nginx-proxy-manager
-sudo docker-compose.yml nginx-proxy-manager/
-cd nginx-proxy-manager/ sudo docker-compose up -d
+mkdir nginx-proxy-manager
+cd nginx-proxy-manager/ && vim docker-compose.yml
+docker-compose pull && docker-compose up -d
 ```
 Browse the Nginx Proxy Manager web GUI: 
 ```
