@@ -18,8 +18,8 @@ services:
       DISABLE_IPV6: 'true'
       X_FRAME_OPTIONS: "sameorigin"
     volumes:
-      - ./npm/data:/data
-      - ./npm/letsencrypt:/etc/letsencrypt
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
         #- ./_hsts.conf:/app/templates/_hsts.conf:ro
 
     networks:
