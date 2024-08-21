@@ -1,4 +1,4 @@
-**The first step is to add NGINX official repository :**
+**The first step is to add NGINX official repository :**  
 Source: https://nginx.org/en/linux_packages.html
 ```sh
 sudo apt install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring && \
