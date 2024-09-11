@@ -21,7 +21,7 @@ This guide outlines the installation of Apache and PHP 7.3 on Ubuntu 20.04, foll
    sudo apt -y install language-pack-en-base &&  sudo apt -y install software-properties-common
    ```
    ```bash
-   sudo export LC_ALL=en_US.UTF-8 && export LANG=en_US.UTF-8 
+   export LC_ALL=en_US.UTF-8 && export LANG=en_US.UTF-8 
    sudo LC_ALL=en_US.UTF-8 add-apt-repository ppa:ondrej/php
    ```
 
