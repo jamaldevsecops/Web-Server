@@ -79,3 +79,46 @@ This guide outlines the installation of Apache and PHP 7.3 on Ubuntu 20.04, foll
    ```
 
 This setup ensures that Apache is installed and configured properly, PHP 7.3 is ready with necessary extensions, and firewall rules are in place for basic web server traffic.
+
+
+### Code Explanation:
+
+```php
+<?php
+
+// Show all information, defaults to INFO_ALL
+phpinfo();
+
+// Show just the module information.
+// phpinfo(8) yields identical results.
+phpinfo(INFO_MODULES);
+
+?>
+```
+
+- `phpinfo()` by default shows all configuration details about the current PHP environment (version, extensions, server info, etc.).
+- `phpinfo(INFO_MODULES)` limits the output to just the loaded modules and their settings.
+
+### Usage:
+
+1. Save the code to a file named `info.php` in your Apache document root (e.g., `/var/www/html/info.php`).
+   
+   ```bash
+   sudo vim /var/www/html/info.php
+   ```
+
+2. Open the file in your web browser:
+   ```
+   http://your-server-ip/info.php
+   ```
+
+   This will display a page showing all your PHP settings and loaded modules.
+
+### **Security Note**:  
+Be cautious about leaving this file accessible, as it reveals sensitive information about your server's configuration. It is recommended to delete or restrict access to it after use:
+   
+```bash
+rm /var/www/html/info.php
+```
+
+
