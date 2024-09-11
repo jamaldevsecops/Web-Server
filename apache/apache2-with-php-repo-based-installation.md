@@ -1,3 +1,4 @@
+# Install Apache with PHP on Ubuntu 20.04
 This guide outlines the installation of Apache and PHP 7.3 on Ubuntu 20.04, followed by enabling `mod_rewrite` for Apache and setting up firewall rules.
 
 ### Step-by-Step Breakdown
