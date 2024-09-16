@@ -1,10 +1,10 @@
+# Install Apache with Multiple PHP Version on Ubuntu 20.04
+
 To use two different PHP versions (e.g., PHP 7.2 and PHP 8.3) for two different applications on Ubuntu 20.04, you can achieve this by configuring PHP-FPM for each version and specifying the desired version for each application using Apache's `SetHandler` or `ProxyPassMatch` directives.
 
 Here’s a step-by-step guide to configure two PHP versions for two apps located at `/var/www/html/app1` and `/var/www/html/app2`:
 
-### Step-by-Step Breakdown
-
-#### Step 1: Install Apache
+### Step 1: Install Apache
    ```bash
    sudo apt-get update
    sudo apt -y install apache2
@@ -15,7 +15,7 @@ Here’s a step-by-step guide to configure two PHP versions for two apps located
    sudo systemctl status apache2
    ```
 
-#### Step 2: Install PHP Repository
+### Step 2: Install PHP Repository
    First, update your system and add the necessary repositories:
    ```bash
    sudo apt-get update
