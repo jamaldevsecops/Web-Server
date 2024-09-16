@@ -4,7 +4,7 @@ Here’s a step-by-step guide to configure two PHP versions for two apps located
 
 ### Step-by-Step Breakdown
 
-#### Setp 1: **Install Apache**
+#### Step 1: Install Apache
    ```bash
    sudo apt-get update
    sudo apt -y install apache2
@@ -15,7 +15,7 @@ Here’s a step-by-step guide to configure two PHP versions for two apps located
    sudo systemctl status apache2
    ```
 
-#### Step 2: **Install PHP Repository**
+#### Step 2: Install PHP Repository
    First, update your system and add the necessary repositories:
    ```bash
    sudo apt-get update
@@ -30,9 +30,6 @@ Here’s a step-by-step guide to configure two PHP versions for two apps located
    - For PHP Gearman: `ppa:ondrej/pkg-gearman`
    - For Apache: `ppa:ondrej/apache2`
    - For Nginx: `ppa:ondrej/nginx-mainline` or `ppa:ondrej/nginx`
-
-
-
 
 ### Step 3: Install PHP and PHP-FPM for Both Versions
 Make sure both PHP 7.2 and PHP 8.3, along with their `php-fpm` versions, are installed:
