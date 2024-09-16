@@ -2,7 +2,39 @@ To use two different PHP versions (e.g., PHP 7.2 and PHP 8.3) for two different 
 
 Here’s a step-by-step guide to configure two PHP versions for two apps located at `/var/www/html/app1` and `/var/www/html/app2`:
 
-### Step 1: Install PHP and PHP-FPM for Both Versions
+### Step-by-Step Breakdown
+
+#### Setp 1: **Install Apache**
+   ```bash
+   sudo apt-get update
+   sudo apt -y install apache2
+   ```
+   ```bash
+   sudo systemctl enable apache2
+   sudo systemctl start apache2
+   sudo systemctl status apache2
+   ```
+
+#### Step 2: **Install PHP Repository**
+   First, update your system and add the necessary repositories:
+   ```bash
+   sudo apt-get update
+   sudo apt -y install language-pack-en-base &&  sudo apt -y install software-properties-common
+   ```
+   ```bash
+   export LC_ALL=en_US.UTF-8 && export LANG=en_US.UTF-8 
+   sudo LC_ALL=en_US.UTF-8 add-apt-repository ppa:ondrej/php
+   ```
+
+   If needed, add other repositories:
+   - For PHP Gearman: `ppa:ondrej/pkg-gearman`
+   - For Apache: `ppa:ondrej/apache2`
+   - For Nginx: `ppa:ondrej/nginx-mainline` or `ppa:ondrej/nginx`
+
+
+
+
+### Step 3: Install PHP and PHP-FPM for Both Versions
 Make sure both PHP 7.2 and PHP 8.3, along with their `php-fpm` versions, are installed:
 
 ```bash
@@ -21,7 +53,7 @@ sudo systemctl start php8.3-fpm
 sudo systemctl enable php8.3-fpm
 ```
 
-### Step 2: Configure Apache to Use PHP-FPM
+### Step 4: Configure Apache to Use PHP-FPM
 You need to configure Apache to route requests to the correct PHP-FPM service depending on the application.
 
 #### 1. Enable Necessary Apache Modules:
@@ -79,7 +111,7 @@ After making these changes, restart Apache to apply the new configuration:
 sudo systemctl restart apache2
 ```
 
-### Step 4: Test the Setup
+### Step 5: Test the Setup
 Now, visit the URLs for both applications:
 - For **app1**, it should use PHP 7.2: `http://your-server-ip/app1`
 - For **app2**, it should use PHP 8.3: `http://your-server-ip/app2`
