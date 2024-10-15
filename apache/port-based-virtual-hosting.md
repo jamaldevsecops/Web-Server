@@ -1,6 +1,6 @@
 # Port Based Virtual Hosting
 
-To run Apache on both port 80 and 8081 with IP-based virtual hosting, and to serve your web application located in /var/www/html/app1, follow these steps:
+To run Apache on both port 80 and 8081 with Port-based virtual hosting, and to serve your web application located in /var/www/html/app1, follow these steps:
 
 1. Enable Apache to Listen on Both Ports
 
