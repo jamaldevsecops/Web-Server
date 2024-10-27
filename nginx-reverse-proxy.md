@@ -72,4 +72,79 @@ systemctl restart nginx
 ```
 ```
 ufw allow 80/tcp
-ufw allow 443/tcp 
+ufw allow 443/tcp
+```
+
+### Nginx custom configuraiton: 
+```
+vim /etc/nginx/nginx.conf
+```
+```bash
+http {
+
+	##
+	# Basic Settings
+	##
+	sendfile on;
+	tcp_nopush on;
+	tcp_nodelay on;
+        server_names_hash_bucket_size 128;
+        server_names_hash_max_size 512;
+	keepalive_timeout 65;
+	types_hash_max_size 2048;
+
+        #---Custome Values Added---#
+	client_max_body_size 10M;
+	server_tokens off;
+	fastcgi_hide_header X-Powered-By;
+	more_clear_headers Server;
+	proxy_connect_timeout       600;
+	proxy_send_timeout          600;
+	proxy_read_timeout          600;
+	send_timeout                600;
+	
+
+
+
+
+	
+	# server_names_hash_bucket_size 64;
+	# server_name_in_redirect off;
+
+	include /etc/nginx/mime.types;
+	default_type application/octet-stream;
+
+	##
+	# SSL Settings
+	##
+
+	ssl_protocols TLSv1.2 TLSv1.3; # Dropping TLSv1, TLSv1.1, and SSLv3, ref: POODLE
+	ssl_prefer_server_ciphers on;
+
+	##
+	# Logging Settings
+	##
+
+	access_log /var/log/nginx/access.log;
+	error_log /var/log/nginx/error.log;
+
+	##
+	# Gzip Settings
+	##
+
+	gzip on;
+
+	# gzip_vary on;
+	# gzip_proxied any;
+	# gzip_comp_level 6;
+	# gzip_buffers 16 8k;
+	# gzip_http_version 1.1;
+	# gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+	# Virtual Host Configs
+	##
+
+	include /etc/nginx/conf.d/*.conf;
+	include /etc/nginx/sites-enabled/*;
+}
+```
