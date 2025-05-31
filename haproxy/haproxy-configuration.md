@@ -158,7 +158,16 @@ Always validate configuration before reloading:
 ```bash
 sudo haproxy -c -f /etc/haproxy/haproxy.cfg
 ```
+Sample Output: 
+```plain
+Configuration file is valid
+```
 
+
+## 🔁 Restart HAProxy After Changes
+```bash
+sudo systemctl restart haproxy
+```
 
 ***Access***
 Open in browser:
@@ -171,7 +180,3 @@ Login using:
 ![image](https://github.com/user-attachments/assets/1c860655-d9c9-4993-bb05-672295c6cd46)
 
 
-## 🔁 Restart HAProxy After Changes
-```bash
-sudo systemctl restart haproxy
-```
