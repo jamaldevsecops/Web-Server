@@ -52,45 +52,22 @@ sudo chown :haproxy /etc/ssl/certs/all/wingssfa.net.pem
 2. ### Generate Diffie-Hellman Parameters
 ```bash
 sudo curl https://ssl-config.mozilla.org/ffdhe2048.txt -o /etc/ssl/certs/dhparam.pem
+sudo chown :haproxy /etc/ssl/certs/dhparam.pem
 ```
-## 🧠 Backend Configuration Summary
-## 🔁 sfa_backend – Wings SFA
-```haproxy
-backend sfa_backend
-    mode http
-    balance roundrobin
-    cookie SFAID insert indirect nocache
-    server sfa1 192.168.20.254:81 cookie sfa1 check inter 5s fall 3 rise 2 slowstart 10s maxconn 100
-    server sfa2 192.168.10.254:81 cookie sfa2 check inter 5s fall 3 rise 2 slowstart 10s maxconn 100
-```
-- Sticky sessions with cookie SFAID
-- Load balanced in roundrobin fashion
 
-## 🔁 hrms_backend – Wings HRMS
-```haproxy
-backend hrms_backend
-    mode http
-    balance roundrobin
-    cookie HRMSID insert indirect nocache
-    server hrms1 192.168.20.254:5380 cookie hrms1 check inter 5s fall 3 rise 2 slowstart 10s maxconn 100
-    server hrms2 192.168.10.254:5380 cookie hrms2 check inter 5s fall 3 rise 2 slowstart 10s maxconn 100
+3. ### Change the Default HAProxy Configuration
+```bash
+sudo mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.org
+vim /etc/haproxy/haproxy.cfg
 ```
-- Sticky sessions with cookie HRMSID
+copy and past the contents of the haproxy.cfg file located to this directory.
 
-## ❌ default_backend
-```haproxy
-backend default_backend
-    mode http
-    http-request deny deny_status 400
-```
-- Rejects unknown requests (e.g., wrong SNI)
-
+## 🧠 Configuration Summary
 ## 🔍 Frontend Logic – SNI-based Routing
 ```haproxy
 frontend https_front
     bind *:443 ssl crt /etc/ssl/certs/all/ alpn h2,http/1.1
     mode http
-
     http-response set-header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
     http-response set-header X-Content-Type-Options nosniff
     http-response set-header X-Frame-Options DENY
@@ -104,25 +81,66 @@ frontend https_front
     default_backend default_backend
 ```
 
-## ⚙️ Global SSL & Security Tuning
+## 🔁 sfa_backend – Wings SFA
 ```haproxy
-ssl-default-bind-curves X25519:prime256v1:secp384r1
-ssl-default-bind-ciphers ECDHE-...:DHE-...
-ssl-default-bind-ciphersuites TLS_AES_...
-ssl-default-bind-options prefer-client-ciphers ssl-min-ver TLSv1.2 no-tls-tickets
+backend sfa_backend
+    mode http
+    balance roundrobin
+    cookie SFAID insert indirect nocache
+    #option httpchk GET /health
+    #http-check connect
+    #http-check send meth GET uri /health
+    #http-check expect status 200
+    server sfa1 192.168.20.254:81 cookie sfa1 check inter 5s fall 3 rise 2 slowstart 10s maxconn 100
+    server sfa2 192.168.10.254:81 cookie sfa2 check inter 5s fall 3 rise 2 slowstart 10s maxconn 100
+```
+- Sticky sessions with cookie SFAID
+- Load balanced in roundrobin fashion
 
-ssl-dh-param-file /etc/ssl/certs/dhparam.pem
+## 🔁 hrms_backend – Wings HRMS
+```haproxy
+backend hrms_backend
+    mode http
+    balance roundrobin
+    cookie HRMSID insert indirect nocache
+    #option httpchk GET /health
+    #http-check connect
+    #http-check send meth GET uri /health
+    #http-check expect status 200
+    server hrms1 192.168.20.254:5380 cookie hrms1 check inter 5s fall 3 rise 2 slowstart 10s maxconn 100
+    server hrms2 192.168.10.254:5380 cookie hrms2 check inter 5s fall 3 rise 2 slowstart 10s maxconn 100
+```
+- Sticky sessions with cookie HRMSID
+- Load balanced in roundrobin fashion
+
+## ❌ default_backend
+```haproxy
+backend default_backend
+    mode http
+    http-request deny deny_status 400
+```
+- Rejects unknown requests (e.g., wrong SNI)
+
+## ⚙️ Global SSL & Security Tuning
+Generated from the following link: https://ssl-config.mozilla.org/#server=haproxy&version=2.8.15-1ppa1~focal&config=intermediate&openssl=1.1.1f&guideline=5.7  
+```haproxy
+    # intermediate configuration
+    ssl-default-bind-curves X25519:prime256v1:secp384r1
+    ssl-default-bind-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
+    ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    ssl-default-bind-options prefer-client-ciphers ssl-min-ver TLSv1.2 no-tls-tickets
+
+    ssl-default-server-ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
+    ssl-default-server-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+    ssl-default-server-options ssl-min-ver TLSv1.2 no-tls-tickets
+
+    # curl https://ssl-config.mozilla.org/ffdhe2048.txt > /path/to/dhparam
+    ssl-dh-param-file /etc/ssl/certs/dhparam.pem
 ```
 - Enforces modern cipher suites and TLS 1.2+
 - Sets secure Diffie-Hellman parameters
 
-## 🧪 Syntax Check Before Restart
-Always validate configuration before reloading:
-```bash
-sudo haproxy -c -f /etc/haproxy/haproxy.cfg
-```
-
-## 📊 HAProxy Stats Page
+## 📊 HAProxy Stats Page Summary
 ***Configuration***
 ```haproxy
 listen stats
@@ -134,6 +152,14 @@ listen stats
     stats refresh 10s
     stats auth admin:YourStrongPassword
 ```
+
+## 🧪 Syntax Check Before Restart
+Always validate configuration before reloading:
+```bash
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+```
+
+
 ***Access***
 Open in browser:
 ```plain
