@@ -45,12 +45,13 @@ Place your SSL certificate bundle in:
 Ensure HAProxy has a valid PEM file for each domain:
 ```bash
 # Example (concatenated cert + key)
-cat fullchain.pem privkey.pem > /etc/ssl/certs/all/my.wingssfa.net.pem
+sudo cat wingssfa.net.crt CA_Bundle.crt wingssfa.net.key > wingssfa.net.pem
+sudo chown :haproxy /etc/ssl/certs/all/wingssfa.net.pem
 ```
 
 2. ### Generate Diffie-Hellman Parameters
 ```bash
-sudo curl -o /etc/ssl/certs/dhparam.pem https://ssl-config.mozilla.org/ffdhe2048.txt
+sudo curl https://ssl-config.mozilla.org/ffdhe2048.txt -o /etc/ssl/certs/dhparam.pem
 ```
 ## 🧠 Backend Configuration Summary
 ## 🔁 sfa_backend – Wings SFA
