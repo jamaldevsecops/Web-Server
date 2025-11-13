@@ -1,5 +1,18 @@
 # ⚡ Nginx High-Performance Tuning (Low Latency & High Traffic)
 
+### 🧪 Benchmark Report Before Any Tunning (default)
+```
+wrk -t2 -c10 -d10s http://192.168.20.126/
+Running 10s test @ http://192.168.20.126/
+  2 threads and 10 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.18ms    2.27ms  46.26ms   98.62%
+    Req/Sec     4.83k     1.05k    7.65k    75.00%
+  96218 requests in 10.01s, 78.82MB read
+Requests/sec:   9615.67
+Transfer/sec:      7.88MB
+```
+
 ## 📝 1. Modify nginx.conf to Use Custom Configuration
 
 Take `/etc/nginx/nginx.conf` file as backup and add the following example:
@@ -87,6 +100,18 @@ http {
 }
 ```
 
+### 🧪 Benchmark Report After Configuration Level Tunning (nginx.conf)
+```
+wrk -t2 -c10 -d10s http://192.168.20.126/
+Running 10s test @ http://192.168.20.126/
+  2 threads and 10 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   768.36us  561.46us  18.79ms   90.62%
+    Req/Sec     6.74k     2.48k   10.68k    52.00%
+  134135 requests in 10.00s, 110.14MB read
+Requests/sec:  13412.26
+Transfer/sec:     11.01MB
+```
 ------------------------------------------------------------------------
 
 
@@ -112,6 +137,18 @@ Apply with:
 sudo sysctl -p
 ```
 
+### 🧪 Benchmark Report After Kernel Level Tunning (sysctl)
+```
+wrk -t2 -c10 -d10s http://192.168.20.126/
+Running 10s test @ http://192.168.20.126/
+  2 threads and 10 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     0.88ms  466.74us   4.68ms   74.12%
+    Req/Sec     5.81k     1.66k    9.22k    75.50%
+  115678 requests in 10.00s, 94.98MB read
+Requests/sec:  11567.28
+Transfer/sec:      9.50MB
+```
 ------------------------------------------------------------------------
 
 ## 🌐 3. Enable HTTP/2
