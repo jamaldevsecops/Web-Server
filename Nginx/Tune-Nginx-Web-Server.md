@@ -1,153 +1,96 @@
 # ⚡ Nginx High-Performance Tuning (Low Latency & High Traffic)
 
-This document includes a **custom configuration file** instead of
-modifying the default `nginx.conf`.
+## 📝 1. Modify nginx.conf to Use Custom Configuration
 
-------------------------------------------------------------------------
-
-## 🎯 1. Why Use a Custom Tuning File?
-
-Using a custom config file:
-
-✔ Keeps `/etc/nginx/nginx.conf` clean\
-✔ Prevents conflicts during upgrades\
-✔ Makes tuning modular and maintainable\
-✔ Allows you to apply changes without touching core files
-
-------------------------------------------------------------------------
-
-## 📁 2. Create a Custom Nginx Configuration Directory
-
-``` bash
-sudo mkdir -p /etc/nginx/custom.d
-```
-
-------------------------------------------------------------------------
-
-## 📝 3. Modify nginx.conf to Use Custom Includes
-
-Edit `/etc/nginx/nginx.conf` and add inside the `http {}` block:
+Take `/etc/nginx/nginx.conf` file as backup and add the following example:
 
 ``` nginx
-include /etc/nginx/custom.d/*.conf;
+cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.original
+vim /etc/nginx/nginx.conf
 ```
-
 Example recommended base `nginx.conf`:
 
 ``` nginx
-user nginx;
+user www-data;
 worker_processes auto;
+worker_cpu_affinity auto;
+worker_rlimit_nofile 200000;
+
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
 
 events {
-    worker_connections 1024;
+    worker_connections 65535;
+    multi_accept on;
+    use epoll;
 }
 
 http {
+
+    # Basic Settings
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    server_tokens off;
+    more_clear_headers Server;
+    more_clear_headers X-Powered-By;
+    more_set_headers "X-Content-Type-Options: nosniff";
+
+    types_hash_max_size 2048;
+
     include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # SSL Hardening
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    # Logging
+    access_log /var/log/nginx/access.log;
+    error_log  /var/log/nginx/error.log;
+
+    # Performance
+    keepalive_timeout 15;
+    keepalive_requests 10000;
+
+    client_body_buffer_size 1m;
+    client_header_buffer_size 1k;
+    large_client_header_buffers 4 8k;
+    client_max_body_size 50m;
+
+    send_timeout 10;
+    client_body_timeout 10;
+    client_header_timeout 10;
+
+    # Gzip
+    gzip on;
+    gzip_disable "msie6";
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 256;
+    gzip_types
+        text/plain
+        text/css
+        application/json
+        application/javascript
+        text/xml
+        application/xml
+        application/xml+rss
+        image/svg+xml;
+
+    # Proxy Cache Path
+    proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mycache:100m inactive=60m;
+
+    # Include Vhosts
     include /etc/nginx/conf.d/*.conf;
-
-    # Custom performance tuning directory
-    include /etc/nginx/custom.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
 }
 ```
 
 ------------------------------------------------------------------------
 
-## ⚙️ 4. Create Your Custom Tuning File
 
-Create:
-
-    /etc/nginx/custom.d/tuning.conf
-
-Add all tuning parameters:
-
-``` nginx
-# -------------------------------------
-#  NGINX PERFORMANCE TUNING
-# -------------------------------------
-
-worker_rlimit_nofile 200000;
-
-# EVENTS tuning
-events {
-    worker_connections 65535;
-    multi_accept on;
-    use epoll;
-}
-
-# HTTP performance tuning
-sendfile on;
-tcp_nopush on;
-tcp_nodelay on;
-
-keepalive_timeout 15;
-keepalive_requests 10000;
-
-client_body_buffer_size 1m;
-client_header_buffer_size 1k;
-large_client_header_buffers 4 8k;
-
-client_max_body_size 50m;
-
-send_timeout 10;
-client_body_timeout 10;
-client_header_timeout 10;
-
-# GZIP optimization
-gzip on;
-gzip_disable "msie6";
-gzip_comp_level 5;
-gzip_min_length 256;
-gzip_proxied any;
-gzip_types
-  text/plain
-  text/css
-  application/json
-  application/javascript
-  text/xml
-  application/xml
-  application/xml+rss
-  image/svg+xml;
-
-# Static file caching
-location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
-    expires 30d;
-    access_log off;
-}
-
-# Proxy caching
-proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=mycache:100m inactive=60m;
-proxy_cache mycache;
-proxy_cache_use_stale error timeout invalid_header updating;
-```
-
-------------------------------------------------------------------------
-
-## ⚠️ 5. IMPORTANT: Prevent Duplicate `events {}` Blocks
-
-Since your custom config includes:
-
-``` nginx
-events {
-    worker_connections 65535;
-    multi_accept on;
-    use epoll;
-}
-```
-
-You must comment out the **default** one inside `nginx.conf`:
-
-``` nginx
-# events {
-#     worker_connections 1024;
-# }
-```
-
-Only **one** `events {}` block is allowed.
-
-------------------------------------------------------------------------
-
-## 🧠 6. Kernel Network Tuning (sysctl)
+## 🧠 2. Kernel Network Tuning (sysctl)
 
 Edit `/etc/sysctl.conf`:
 
@@ -171,7 +114,7 @@ sudo sysctl -p
 
 ------------------------------------------------------------------------
 
-## 🌐 7. Enable HTTP/2
+## 🌐 3. Enable HTTP/2
 
 ``` nginx
 server {
@@ -182,7 +125,7 @@ server {
 
 ------------------------------------------------------------------------
 
-## 🤝 8. Load Balancer Example
+## 🤝 4. Load Balancer Example
 
 ``` nginx
 upstream backend {
@@ -195,7 +138,7 @@ upstream backend {
 
 ------------------------------------------------------------------------
 
-## 🧹 9. Logging Optimization
+## 🧹 5. Logging Optimization
 
 ``` nginx
 access_log off;
@@ -209,7 +152,7 @@ access_log /var/log/nginx/access.log main buffer=512k flush=1m;
 
 ------------------------------------------------------------------------
 
-## 🧪 10. Benchmark Tools
+## 🧪 6. Benchmark Tools
 
 ### 🚀 wrk
 
@@ -231,7 +174,7 @@ siege -c 2000 -t 1M http://yourserver/
 
 ------------------------------------------------------------------------
 
-## ▶️ 11. Test & Reload Nginx
+## ▶️ 7. Test & Reload Nginx
 
 ``` bash
 sudo nginx -t
