@@ -5,7 +5,7 @@ modifying the default `nginx.conf`.
 
 ------------------------------------------------------------------------
 
-# 🎯 1. Why Use a Custom Tuning File?
+## 🎯 1. Why Use a Custom Tuning File?
 
 Using a custom config file:
 
@@ -16,7 +16,7 @@ Using a custom config file:
 
 ------------------------------------------------------------------------
 
-# 📁 2. Create a Custom Nginx Configuration Directory
+## 📁 2. Create a Custom Nginx Configuration Directory
 
 ``` bash
 sudo mkdir -p /etc/nginx/custom.d
@@ -24,7 +24,7 @@ sudo mkdir -p /etc/nginx/custom.d
 
 ------------------------------------------------------------------------
 
-# 📝 3. Modify nginx.conf to Use Custom Includes
+## 📝 3. Modify nginx.conf to Use Custom Includes
 
 Edit `/etc/nginx/nginx.conf` and add inside the `http {}` block:
 
@@ -53,7 +53,7 @@ http {
 
 ------------------------------------------------------------------------
 
-# ⚙️ 4. Create Your Custom Tuning File
+## ⚙️ 4. Create Your Custom Tuning File
 
 Create:
 
@@ -123,7 +123,7 @@ proxy_cache_use_stale error timeout invalid_header updating;
 
 ------------------------------------------------------------------------
 
-# ⚠️ 5. IMPORTANT: Prevent Duplicate `events {}` Blocks
+## ⚠️ 5. IMPORTANT: Prevent Duplicate `events {}` Blocks
 
 Since your custom config includes:
 
@@ -147,7 +147,7 @@ Only **one** `events {}` block is allowed.
 
 ------------------------------------------------------------------------
 
-# 🧠 6. Kernel Network Tuning (sysctl)
+## 🧠 6. Kernel Network Tuning (sysctl)
 
 Edit `/etc/sysctl.conf`:
 
@@ -171,7 +171,7 @@ sudo sysctl -p
 
 ------------------------------------------------------------------------
 
-# 🌐 7. Enable HTTP/2
+## 🌐 7. Enable HTTP/2
 
 ``` nginx
 server {
@@ -182,7 +182,7 @@ server {
 
 ------------------------------------------------------------------------
 
-# 🤝 8. Load Balancer Example
+## 🤝 8. Load Balancer Example
 
 ``` nginx
 upstream backend {
@@ -195,7 +195,7 @@ upstream backend {
 
 ------------------------------------------------------------------------
 
-# 🧹 9. Logging Optimization
+## 🧹 9. Logging Optimization
 
 ``` nginx
 access_log off;
@@ -209,7 +209,7 @@ access_log /var/log/nginx/access.log main buffer=512k flush=1m;
 
 ------------------------------------------------------------------------
 
-# 🧪 10. Benchmark Tools
+## 🧪 10. Benchmark Tools
 
 ### 🚀 wrk
 
@@ -231,7 +231,7 @@ siege -c 2000 -t 1M http://yourserver/
 
 ------------------------------------------------------------------------
 
-# ▶️ 11. Test & Reload Nginx
+## ▶️ 11. Test & Reload Nginx
 
 ``` bash
 sudo nginx -t
@@ -240,7 +240,7 @@ sudo systemctl reload nginx
 
 ------------------------------------------------------------------------
 
-# 🎉 Your custom configuration tuning is fully ready!
+## 🎉 Your custom configuration tuning is fully ready!
 
 This file contains: ✔ Custom include method\
 ✔ ALL tuning settings\
