@@ -1,32 +1,33 @@
-# 🚀 Laravel + Apache + SELinux — Adjustment
+# 🚀 Laravel + Apache + SELinux — Production-Grade Setup (RHEL/CentOS 8+)
 
-This document describes a **production-grade**, **audit-safe**, and **SELinux-enforcing** setup for running a **Laravel backend** on **RHEL/CentOS 8+** with:
+This document defines a **secure**, **audit-compliant**, and **SELinux-enforcing** deployment model for running a **Laravel backend** using:
 
-- Apache (`httpd`)
-- PHP-FPM
-- Remote MySQL (custom port)
-- Non-root developer user (`appadmin`)
-- Secure shared permissions (no `777`)
-
----
-
-## 🏗️ Target Architecture
-
-| Component | Value |
-|--------|------|
-| Web server | Apache (`apache`) |
-| PHP runtime | PHP-FPM |
-| App owner | `appadmin` (non-root) |
-| Shared access | Linux group `webapp` |
-| SELinux | Enforcing |
-| DB | Remote MySQL (e.g. port `7221`) |
-| Writable dirs | `storage`, `bootstrap/cache` |
-| Permission model | Group + setgid |
-| PHP umask | `002` |
+- 🧩 Apache (`httpd`)
+- 🐘 PHP-FPM
+- 🗄️ Remote MySQL (custom port)
+- 👤 Non-root application owner (`appadmin`)
+- 🔐 Shared group permissions (no `777`)
+- 🛡️ SELinux in **Enforcing** mode
 
 ---
 
-## 🔹 STEP 1: Create application user
+## 🏗️ Target Architecture Overview
+
+| Component | Configuration |
+|---------|---------------|
+| 🌐 Web Server | Apache (`httpd`) |
+| 🐘 PHP Runtime | PHP-FPM |
+| 👤 App Owner | `appadmin` (non-root) |
+| 👥 Shared Group | `webapp` |
+| 🛡️ SELinux | Enforcing |
+| 🗄️ Database | Remote MySQL (TCP `3306`) |
+| ✍️ Writable Paths | `storage`, `bootstrap/cache` |
+| 🔑 Permission Model | Group + setgid |
+| ⚙️ PHP umask | `002` |
+
+---
+
+## 👤 STEP 1: Create Application User
 
 ```bash
 useradd -m -s /bin/bash appadmin
@@ -35,7 +36,7 @@ passwd appadmin
 
 ---
 
-## 🔹 STEP 2: Create shared group
+## 👥 STEP 2: Create Shared Group
 
 ```bash
 groupadd webapp
@@ -43,7 +44,7 @@ usermod -aG webapp apache
 usermod -aG webapp appadmin
 ```
 
-⚠️ **IMPORTANT**: re-login as `appadmin`
+⚠️ **IMPORTANT**: Re-login to apply group membership
 
 ```bash
 su - appadmin
@@ -52,25 +53,23 @@ newgrp webapp
 
 ---
 
-## 🔹 STEP 3: Deploy application directory
+## 📁 STEP 3: Deploy Application Directory
 
 ```bash
-mkdir -p /var/www/html/nagad-backend-production
-chown -R appadmin:webapp /var/www/html/nagad-backend-production
+mkdir -p /var/www/html/myapp-backend-production
+chown -R appadmin:webapp /var/www/html/myapp-backend-production
 ```
 
-Switch to developer user:
+Switch to developer user and deploy code:
 
 ```bash
 su - appadmin
-cd /var/www/html/nagad-backend-production
+cd /var/www/html/myapp-backend-production
 ```
-
-Deploy Laravel source code here.
 
 ---
 
-## 🔹 STEP 4: Laravel writable directories
+## ✍️ STEP 4: Configure Laravel Writable Directories
 
 ```bash
 mkdir -p storage bootstrap/cache
@@ -78,7 +77,7 @@ chown -R appadmin:webapp storage bootstrap/cache
 chmod -R 2770 storage bootstrap/cache
 ```
 
-Verify:
+Verify permissions:
 
 ```bash
 ls -ld storage bootstrap/cache
@@ -91,15 +90,15 @@ drwxrws--- appadmin webapp storage
 
 ---
 
-## 🔹 STEP 5: Ensure parent directory traversal
+## 🔎 STEP 5: Ensure Parent Directory Traversal
 
-Apache must traverse **all parent directories**:
+Apache must traverse all parent directories:
 
 ```bash
-chmod g+x /var /var/www /var/www/html /var/www/html/nagad-backend-production
+chmod g+x /var /var/www /var/www/html /var/www/html/myapp-backend-production
 ```
 
-Verify:
+Verify traversal path:
 
 ```bash
 namei -l storage
@@ -107,18 +106,16 @@ namei -l storage
 
 ---
 
-## 🔹 STEP 6: SELinux file context (MANDATORY)
-
-Label Laravel writable directories:
+## 🛡️ STEP 6: Apply SELinux File Contexts (MANDATORY)
 
 ```bash
-semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/html/nagad-backend-production/storage(/.*)?"
-semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/html/nagad-backend-production/bootstrap/cache(/.*)?"
+semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/html/myapp-backend-production/storage(/.*)?"
+semanage fcontext -a -t httpd_sys_rw_content_t "/var/www/html/myapp-backend-production/bootstrap/cache(/.*)?"
 
-restorecon -Rv /var/www/html/nagad-backend-production
+restorecon -Rv /var/www/html/myapp-backend-production
 ```
 
-Verify:
+Verify labels:
 
 ```bash
 ls -Zd storage bootstrap/cache
@@ -131,18 +128,15 @@ httpd_sys_rw_content_t
 
 ---
 
-## 🔹 STEP 7: PHP-FPM umask adjustment (CRITICAL)
+## ⚙️ STEP 7: Configure PHP-FPM umask (CRITICAL)
 
-Without this step, **group-write breaks after reboot**.
-
-### Edit PHP-FPM pool configuration
+Edit pool configuration:
 
 ```bash
 vi /etc/php-fpm.d/www.conf
 ```
 
-Add the following line:
-
+Add:
 ```ini
 php_admin_value[umask] = 002
 ```
@@ -166,96 +160,50 @@ Expected:
 
 ---
 
-## 🛡️ SELinux Configuration for MySQL on Custom Port (3306)
+## 🗄️ STEP 8: SELinux Configuration for MySQL (Port 3306)
 
-### 🔍 Step 1: Verify Existing MySQL SELinux Port Labels
-
+### 🔍 Verify existing labels
 ```bash
 semanage port -l | grep mysqld
 ```
 
-Expected output (before change):
-```
-mysqld_port_t                  tcp      1186, 3306, 63132-63164
-mysqlmanagerd_port_t           tcp      2273
-```
-
----
-
-### ➕ Step 2: Add Custom MySQL Port to SELinux
-
+### ➕ Add MySQL port
 ```bash
 semanage port -a -t mysqld_port_t -p tcp 3306
 ```
 
-If the port already exists:
+If already defined:
 ```bash
 semanage port -m -t mysqld_port_t -p tcp 3306
 ```
 
----
-
-### ✅ Step 3: Verify Port Addition
-
-```bash
-semanage port -l | grep mysqld
-```
-
-Expected output:
-```
-mysqld_port_t                  tcp      3306, 1186, 3306, 63132-63164
-```
-
----
-
-### 🔐 Step 4: Ensure SELinux Boolean for DB Connectivity
-
-```bash
-getsebool httpd_can_network_connect_db
-```
-
-If disabled:
+### 🔐 Enable DB connectivity
 ```bash
 setsebool -P httpd_can_network_connect_db 1
 ```
 
----
-
-### 🔄 Step 5: Restart Services
-
+Restart services:
 ```bash
-systemctl restart php-fpm
-systemctl restart httpd   # or nginx
+systemctl restart php-fpm httpd
 ```
 
 ---
 
-## ✔️ Verification Checklist
+## ✔️ STEP 9: Verification Checklist
 
-### 🧪 A. Verify MySQL is Listening on Port 3306
-
+### 🧪 MySQL Listening
 ```bash
 ss -lntp | grep 3306
 ```
 
-Expected:
-```
-LISTEN 0 80 *:3306 *:* users:(("mysqld",pid=XXXX,fd=XX))
-```
-
----
-
-### 🔐 B. Verify SELinux Configuration
-
+### 🔐 SELinux Checks
 ```bash
+getenforce
 semanage port -l | grep mysqld | grep 3306
 getsebool httpd_can_network_connect_db
 ```
 
----
-
-### 🌐 C. Verify Application → MySQL Connectivity
-
+### 🌐 Application Connectivity
 ```bash
 mysql -h 127.0.0.1 -P 3306 -u <db_user> -p
 ```
@@ -273,29 +221,20 @@ echo "MySQL connection successful";
 
 ---
 
-### 🚨 Troubleshooting
-
-```bash
-ausearch -m AVC -ts recent
-sealert -a /var/log/audit/audit.log
-```
-
----
-
-## 🔹 STEP 9: Apache VirtualHost (Backend)
+## 🌐 STEP 10: Apache VirtualHost (Backend)
 
 ```apache
 <VirtualHost *:81>
-    ServerName prodweb.nagad.com.bd
-    DocumentRoot /var/www/html/nagad-backend-production/public
+    ServerName prodweb.myapp.com.bd
+    DocumentRoot /var/www/html/myapp-backend-production/public
 
-    <Directory "/var/www/html/nagad-backend-production/public">
+    <Directory "/var/www/html/myapp-backend-production/public">
         AllowOverride All
         Require all granted
     </Directory>
 
-    ErrorLog /var/log/httpd/nagad-backend-error.log
-    CustomLog /var/log/httpd/nagad-backend-access.log combined
+    ErrorLog /var/log/httpd/myapp-backend-error.log
+    CustomLog /var/log/httpd/myapp-backend-access.log combined
 </VirtualHost>
 ```
 
@@ -307,18 +246,17 @@ systemctl reload httpd
 
 ---
 
-## 🔹 STEP 10: Laravel environment
+## ⚙️ STEP 11: Laravel Environment Setup
 
 ```bash
 su - appadmin
-cd /var/www/html/nagad-backend-production
+cd /var/www/html/myapp-backend-production
 
 cp .env.example .env
 php artisan key:generate
 ```
 
 Clear caches:
-
 ```bash
 php artisan config:clear
 php artisan route:clear
@@ -327,52 +265,30 @@ php artisan view:clear
 
 ---
 
-## 🔹 STEP 11: Verify Apache write access
+## 🧪 STEP 12: Validate Write Access & Logging
 
 ```bash
-sudo -u apache touch storage/testfile
-sudo -u apache rm storage/testfile
+sudo -u apache touch storage/testfile && rm storage/testfile
 ```
 
-✔ Must succeed
-
----
-
-## 🔹 STEP 12: Verify Laravel logging
-
+Laravel log test:
 ```bash
 sudo -u apache php artisan tinker
 ```
-
 ```php
 Log::info('Production setup verified');
 ```
 
-Check:
-
-```bash
-ls storage/logs/laravel.log
-```
-
 ---
 
-## 🔹 STEP 13: Enforce SELinux
+## 🔒 STEP 13: Enforce SELinux & Reboot Test
 
 ```bash
 setenforce 1
-getenforce
-```
-
----
-
-## 🔹 STEP 14: Reboot validation
-
-```bash
 reboot
 ```
 
-After reboot:
-
+Post-reboot validation:
 ```bash
 getenforce
 getsebool httpd_can_network_connect_db
@@ -383,12 +299,12 @@ semanage port -l | grep mysqld
 
 ## ✅ Final Production Checklist
 
-- SELinux enforcing
-- No world permissions
-- Shared group access
-- PHP umask correct
-- Laravel logs writable
-- Survives reboot
+- 🛡️ SELinux enforcing
+- 🔐 No world permissions
+- 👥 Shared group access
+- ⚙️ PHP umask persistent
+- ✍️ Laravel logs writable
+- 🔁 Survives reboot
 
 ---
 
@@ -403,11 +319,5 @@ semanage port -l | grep mysqld
 
 ## 📌 Key Principle
 
-> Same file access ≠ same SELinux domain
-
-Apache stays confined. Humans stay unprivileged. Files bridge the gap.
-
----
-
-**End of document**
-
+> Same file access ≠ Same SELinux domain  
+> Apache stays confined. Humans stay unprivileged. Files bridge the gap.
