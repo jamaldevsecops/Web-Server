@@ -1,6 +1,6 @@
 # 🚀 Production-Grade Nginx + PHP 8.2 Runbook (Fedora/RHEL-based)
 
-**Author:** ChatGPT  
+**Author:** Jamal Hossain 
 **Date:** 2026-03-22  
 **Environment:** RHEL 8 / RHEL 9 / Fedora-based systems  
 
