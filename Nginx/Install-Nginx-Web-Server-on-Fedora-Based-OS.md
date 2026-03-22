@@ -1,207 +1,255 @@
-# 🚀 Nginx & Nginx Extras Installation Guide (Ubuntu & RHEL)
+# 🚀 Nginx + PHP-FPM Runbook (RHEL 9 / Rocky / AlmaLinux)
 
-This document includes **both** standard Nginx installation instructions
-**and** Nginx Extras installation instructions.
+## 📌 Overview
+This runbook provides step-by-step instructions for deploying **Nginx + PHP-FPM** with:
+- 🔐 SELinux (Enforcing)
+- 🔥 firewalld
+- 🌐 Virtual Host (web1.ngd.com)
+- 🔒 SSL (Custom Certificate + CA Bundle)
+- 🛡️ Security Hardening
+- ⚡ Performance Tuning
+- 🧰 Troubleshooting
 
-------------------------------------------------------------------------
+---
 
-# 🟩 PART 1 --- Standard Nginx Installation
-
-## 🐧 Install Nginx on Ubuntu (20.04/22.04/24.04)
-
-### 🔄 Step 1: Update System Packages
-
-``` bash
-sudo apt update
-sudo apt upgrade -y
+## 🧱 1. Installation
+```bash
+sudo dnf -y update && dnf -y install nginx
+```
+### 📦 Install packages
+```bash
+sudo dnf install -y epel-release
+sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm
+sudo dnf module reset php -y
+sudo dnf module enable php:remi-8.2 -y
+sudo dnf install -y php php-fpm php-cli php-common php-mysqlnd php-gd php-mbstring php-xml php-opcache
 ```
 
-### 📦 Step 2: Install Nginx
-
-``` bash
-sudo apt install nginx -y
+### ▶️ Enable services
+```bash
+systemctl enable --now nginx php-fpm
 ```
 
-### ▶️ Step 3: Enable & Start Nginx
+---
 
-``` bash
-sudo systemctl enable nginx
-sudo systemctl start nginx
+## 📁 2. Directory Setup
+
+```bash
+mkdir -p /srv/www/web1.ngd.com/public
+mkdir -p /var/log/nginx/web1.ngd.com
+echo '<?php phpinfo();' > /srv/www/web1.ngd.com/public/index.php
+chown -R nginx:nginx /srv/www/web1.ngd.com
+chmod -R 0755 /srv/www/web1.ngd.com
 ```
 
-### 🩺 Step 4: Check Service Status
+---
 
-``` bash
-sudo systemctl status nginx
+## 🔐 3. SELinux Configuration
+
+### 📌 Apply context
+```bash
+semanage fcontext -a -t httpd_sys_content_t "/srv/www/web1.ngd.com(/.*)?"
+restorecon -Rv /srv/www/web1.ngd.com
 ```
 
-### 🔥 Step 5: Allow HTTP/HTTPS Through Firewall
-
-``` bash
-sudo ufw allow 'Nginx Full'
-sudo ufw reload
+### ✏️ Writable directory
+```bash
+mkdir -p /srv/www/web1.ngd.com/storage
+chown -R nginx:nginx /srv/www/web1.ngd.com/storage
+semanage fcontext -a -t httpd_sys_rw_content_t "/srv/www/web1.ngd.com/storage(/.*)?"
+restorecon -Rv /srv/www/web1.ngd.com/storage
 ```
 
-### 🌍 Step 6: Verify Installation
-
-Visit:
-
-    http://your_server_ip
-
-------------------------------------------------------------------------
-
-## 🛡 Install Nginx on RHEL / CentOS / Rocky / AlmaLinux
-
-### 🔄 Step 1: Update System
-
-``` bash
-sudo dnf update -y
+### 🌐 Allow outbound connections (if needed)
+```bash
+setsebool -P httpd_can_network_connect on
 ```
 
-### 📦 Step 2: Install EPEL Repository
+---
 
-``` bash
-sudo dnf install epel-release -y
+## 🔥 4. Firewall Configuration
+
+```bash
+firewall-cmd --permanent --add-service=http
+firewall-cmd --permanent --add-service=https
+firewall-cmd --reload
 ```
 
-### 🌐 Step 3: Install Nginx
+---
 
-``` bash
-sudo dnf install nginx -y
+## 🔒 5. SSL Setup
+
+### 📂 Directory
+```bash
+mkdir -p /etc/nginx/ssl/web1.ngd.com
 ```
 
-### ▶️ Step 4: Enable & Start Service
-
-``` bash
-sudo systemctl enable nginx
-sudo systemctl start nginx
+### 🔗 Combine certificate chain
+```bash
+cat server.crt cabundle.crt > fullchain.crt
 ```
 
-### 🔥 Step 5: Allow Firewall Traffic
-
-``` bash
-sudo firewall-cmd --permanent --add-service=http
-sudo firewall-cmd --permanent --add-service=https
-sudo firewall-cmd --reload
+### 🔐 Secure permissions
+```bash
+chown root:nginx server.key
+chmod 640 server.key
+chmod 644 fullchain.crt
 ```
 
-### 🌍 Step 6: Verify Installation
+---
 
-Visit:
+## 🌐 6. Nginx Virtual Host
 
-    http://your_server_ip
+📄 `/etc/nginx/conf.d/web1.ngd.com.conf`
 
-------------------------------------------------------------------------
+```nginx
+server {
+    listen 80;
+    server_name web1.ngd.com;
+    return 301 https://$host$request_uri;
+}
 
-# 🟦 PART 2 --- Nginx Extras Installation (Ubuntu & RHEL)
+server {
+    listen 443 ssl http2;
+    server_name web1.ngd.com;
 
-Nginx Extras provides many additional compiled modules including:
+    root /srv/www/web1.ngd.com/public;
+    index index.php;
 
--   `headers-more`\
--   `auth-request`\
--   `echo`\
--   `lua` module\
--   `image-filter`\
--   `geoip`\
--   and more.
+    ssl_certificate /etc/nginx/ssl/web1.ngd.com/fullchain.crt;
+    ssl_certificate_key /etc/nginx/ssl/web1.ngd.com/server.key;
 
-------------------------------------------------------------------------
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
 
-# 🐧 Install Nginx Extras on Ubuntu (20.04/22.04/24.04)
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
 
-### 🔄 Step 1: Update System Packages
-
-``` bash
-sudo apt update
-sudo apt upgrade -y
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php-fpm/www.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
 ```
 
-### 📦 Step 2: Install Nginx Extras
+---
 
-``` bash
-sudo apt install nginx-extras -y
+## ⚡ 7. Nginx Performance Tuning
+
+📄 `/etc/nginx/nginx.conf`
+
+```nginx
+worker_processes auto;
+worker_connections 2048;
+
+keepalive_timeout 15;
+keepalive_requests 100;
+
+sendfile on;
+tcp_nopush on;
+tcp_nodelay on;
+
+gzip on;
+gzip_types text/plain text/css application/json application/javascript;
 ```
 
-📌 **NOTE:** Installing `nginx-extras` *replaces* the standard `nginx`
-package.
+---
 
-### ▶️ Step 3: Enable & Start Nginx
+## 🐘 8. PHP-FPM Tuning
 
-``` bash
-sudo systemctl enable nginx
-sudo systemctl start nginx
+📄 `/etc/php-fpm.d/www.conf`
+
+```ini
+pm = ondemand
+pm.max_children = 20
+pm.process_idle_timeout = 10s
+pm.max_requests = 500
 ```
 
-### 🩺 Step 4: Check Service Status
+📄 `/etc/php.ini`
 
-``` bash
-sudo systemctl status nginx
+```ini
+memory_limit = 256M
+upload_max_filesize = 20M
+post_max_size = 20M
+max_execution_time = 60
+
+opcache.enable=1
+opcache.memory_consumption=128
+opcache.max_accelerated_files=10000
 ```
 
-### 🔥 Step 5: Allow HTTP/HTTPS Through Firewall
+---
 
-``` bash
-sudo ufw allow 'Nginx Full'
-sudo ufw reload
+## 🛡️ 9. Security Hardening
+
+- ❌ Disable version exposure
+```nginx
+server_tokens off;
 ```
 
-### 🌍 Step 6: Verify Installation
-
-Visit:
-
-    http://your_server_ip
-
-------------------------------------------------------------------------
-
-# 🛡 Install Equivalent Extras on RHEL / CentOS / Rocky / AlmaLinux
-
-⚠️ **There is no direct `nginx-extras` package** for RHEL-based
-distributions.
-
-Instead, install extra modules individually.
-
-### 🔄 Step 1: Update System
-
-``` bash
-sudo dnf update -y
+- 🔒 Secure PHP
+```ini
+expose_php = Off
+display_errors = Off
 ```
 
-### 📦 Step 2: Enable EPEL Repository
-
-``` bash
-sudo dnf install epel-release -y
+- 🚫 Block hidden files
+```nginx
+location ~ /\. {
+    deny all;
+}
 ```
 
-### 🌐 Step 3: Install Standard Nginx
+---
 
-``` bash
-sudo dnf install nginx -y
+## 🧪 10. Validation
+
+```bash
+nginx -t
+systemctl reload nginx
+curl -I https://web1.ngd.com
 ```
 
-### 📦 Step 4: Install Extra Modules
+---
 
-Examples:
+## 🧰 11. Troubleshooting
 
-``` bash
-sudo dnf install nginx-mod-http-headers-more
-sudo dnf install nginx-mod-http-image-filter
-sudo dnf install nginx-mod-http-perl
-sudo dnf install nginx-mod-stream
+### ❗ 502 Bad Gateway
+```bash
+systemctl status php-fpm
 ```
 
-### ▶️ Step 5: Enable & Start Service
-
-``` bash
-sudo systemctl enable nginx
-sudo systemctl start nginx
+### ❗ SELinux issues
+```bash
+ausearch -m avc -ts recent
 ```
 
-### 🌍 Step 6: Verify Installation
+### ❗ Firewall issues
+```bash
+firewall-cmd --list-all
+```
 
-Visit:
+---
 
-    http://your_server_ip
+## 🔁 12. Rollback
 
-------------------------------------------------------------------------
+```bash
+mv /etc/nginx/conf.d/web1.ngd.com.conf /tmp/
+nginx -t
+systemctl reload nginx
+```
 
-# 🎉 You now have both Standard Nginx & Nginx Extras installation guides!
+---
+
+## 📎 Notes
+- ✅ Keep SELinux enforcing
+- 🔐 Always protect private keys
+- 🔄 Regular updates recommended
+
+---
+
+# 🎯 End of Runbook
