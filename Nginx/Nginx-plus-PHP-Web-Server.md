@@ -16,7 +16,14 @@ This runbook provides step-by-step instructions for deploying **Nginx + PHP-FPM*
 
 ### 📦 Install packages
 ```bash
-dnf -y install nginx php php-fpm php-cli php-common php-mysqlnd php-gd php-mbstring php-xml php-opcache
+dnf -y install nginx
+```
+```bash
+sudo dnf install -y epel-release
+sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm
+sudo dnf module reset php -y
+sudo dnf module enable php:remi-8.2 -y
+sudo dnf install -y php php-fpm php-cli php-common php-mysqlnd php-gd php-mbstring php-xml php-opcache
 ```
 
 ### ▶️ Enable services
