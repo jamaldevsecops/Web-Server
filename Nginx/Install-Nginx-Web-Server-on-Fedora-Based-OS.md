@@ -1,131 +1,193 @@
-# 🚀 Nginx + PHP-FPM Runbook (RHEL 9 / Rocky / AlmaLinux)
+# 🚀 Production-Grade Nginx + PHP 8.2 Runbook (Fedora/RHEL-based)
 
-## 📌 Overview
-This runbook provides step-by-step instructions for deploying **Nginx + PHP-FPM** with:
-- 🔐 SELinux (Enforcing)
-- 🔥 firewalld
-- 🌐 Virtual Host (web1.ngd.com)
-- 🔒 SSL (Custom Certificate + CA Bundle)
-- 🛡️ Security Hardening
-- ⚡ Performance Tuning
-- 🧰 Troubleshooting
+**Author:** ChatGPT  
+**Date:** 2026-03-22  
+**Environment:** RHEL 8 / RHEL 9 / Fedora-based systems  
 
 ---
 
-## 🧱 1. Installation
+## 📌 Overview
+This runbook provides step-by-step instructions to deploy a **production-grade Nginx web server with PHP 8.2**, including:
+- Installation
+- SELinux & Firewalld configuration
+- Virtual Host setup
+- SSL (Custom Certificate)
+- Performance tuning
+- Security hardening
+- Troubleshooting
+
+---
+
+## 🧰 Prerequisites
+- Root or sudo access
+- DNS already configured for:
+  - `web1.ngd.com`
+- Open ports: 80, 443
+- System updated:
 ```bash
-sudo dnf -y update && dnf -y install nginx
+sudo dnf update -y
 ```
-### 📦 Install packages
+
+---
+
+# 🟢 1. Nginx Installation
+```bash
+sudo dnf install -y nginx
+sudo systemctl enable nginx
+sudo systemctl start nginx
+sudo systemctl status nginx
+```
+
+---
+
+# 🟢 2. PHP 8.2 Installation (EPEL + REMI)
+
+## 📍 RHEL 8
+```bash
+sudo dnf install -y epel-release
+sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+sudo dnf module reset php -y
+sudo dnf module enable php:remi-8.2 -y
+sudo dnf install -y php php-fpm php-cli php-mysqlnd php-opcache php-gd php-curl php-mbstring php-xml
+```
+
+## 📍 RHEL 9
 ```bash
 sudo dnf install -y epel-release
 sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm
 sudo dnf module reset php -y
 sudo dnf module enable php:remi-8.2 -y
-sudo dnf install -y php php-fpm php-cli php-common php-mysqlnd php-gd php-mbstring php-xml php-opcache
+sudo dnf install -y php php-fpm php-cli php-mysqlnd php-opcache php-gd php-curl php-mbstring php-xml
 ```
 
-### ▶️ Enable services
+### ▶️ Enable PHP-FPM
 ```bash
-systemctl enable --now nginx php-fpm
+sudo systemctl enable php-fpm
+sudo systemctl start php-fpm
 ```
 
 ---
 
-## 📁 2. Directory Setup
-
+# 🔐 3. SELinux Configuration
 ```bash
-mkdir -p /srv/www/web1.ngd.com/public
-mkdir -p /var/log/nginx/web1.ngd.com
-echo '<?php phpinfo();' > /srv/www/web1.ngd.com/public/index.php
-chown -R nginx:nginx /srv/www/web1.ngd.com
-chmod -R 0755 /srv/www/web1.ngd.com
+sudo setsebool -P httpd_can_network_connect 1
+sudo setsebool -P httpd_execmem 1
+```
+
+### Fix permissions for web root
+```bash
+sudo chcon -R -t httpd_sys_content_t /var/www
+sudo chcon -R -t httpd_sys_rw_content_t /var/www
 ```
 
 ---
 
-## 🔐 3. SELinux Configuration
-
-### 📌 Apply context
+# 🔥 4. Firewalld Configuration
 ```bash
-semanage fcontext -a -t httpd_sys_content_t "/srv/www/web1.ngd.com(/.*)?"
-restorecon -Rv /srv/www/web1.ngd.com
-```
-
-### ✏️ Writable directory
-```bash
-mkdir -p /srv/www/web1.ngd.com/storage
-chown -R nginx:nginx /srv/www/web1.ngd.com/storage
-semanage fcontext -a -t httpd_sys_rw_content_t "/srv/www/web1.ngd.com/storage(/.*)?"
-restorecon -Rv /srv/www/web1.ngd.com/storage
-```
-
-### 🌐 Allow outbound connections (if needed)
-```bash
-setsebool -P httpd_can_network_connect on
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --reload
 ```
 
 ---
 
-## 🔥 4. Firewall Configuration
-
+# 🧪 5. Test with IP:Port
 ```bash
-firewall-cmd --permanent --add-service=http
-firewall-cmd --permanent --add-service=https
-firewall-cmd --reload
+curl http://SERVER_IP
 ```
+Expected: Nginx default page
 
 ---
 
-## 🔒 5. SSL Setup
+# 🌐 6. Virtual Host Configuration (web1.ngd.com)
 
-### 📂 Directory
+### Create directory
 ```bash
-mkdir -p /etc/nginx/ssl/web1.ngd.com
+sudo mkdir -p /var/www/web1.ngd.com/public_html
+sudo mkdir -p /var/www/web1.ngd.com/logs
 ```
 
-### 🔗 Combine certificate chain
+### Permissions
 ```bash
-cat server.crt cabundle.crt > fullchain.crt
+sudo chown -R nginx:nginx /var/www/web1.ngd.com
+sudo chmod -R 755 /var/www
 ```
 
-### 🔐 Secure permissions
+### Create index file
 ```bash
-chown root:nginx server.key
-chmod 640 server.key
-chmod 644 fullchain.crt
+echo "<?php phpinfo(); ?>" | sudo tee /var/www/web1.ngd.com/public_html/index.php
 ```
 
----
-
-## 🌐 6. Nginx Virtual Host
-
-📄 `/etc/nginx/conf.d/web1.ngd.com.conf`
+### Nginx Config
+```bash
+sudo nano /etc/nginx/conf.d/web1.ngd.com.conf
+```
 
 ```nginx
 server {
     listen 80;
     server_name web1.ngd.com;
-    return 301 https://$host$request_uri;
-}
 
+    root /var/www/web1.ngd.com/public_html;
+    index index.php index.html;
+
+    access_log /var/www/web1.ngd.com/logs/access.log;
+    error_log /var/www/web1.ngd.com/logs/error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php-fpm/www.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+```
+
+### Test & Reload
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+---
+
+# 🧪 7. Test HTTP
+```bash
+curl http://web1.ngd.com
+```
+Expected: PHP info page
+
+---
+
+# 🔒 8. SSL Configuration (Custom Certificate)
+
+### Copy certificates
+```bash
+sudo mkdir -p /etc/nginx/ssl
+sudo cp your_cert.crt /etc/nginx/ssl/
+sudo cp your_private.key /etc/nginx/ssl/
+sudo cp ca_bundle.crt /etc/nginx/ssl/
+```
+
+### Update Nginx Config
+```nginx
 server {
     listen 443 ssl http2;
     server_name web1.ngd.com;
 
-    root /srv/www/web1.ngd.com/public;
+    ssl_certificate /etc/nginx/ssl/your_cert.crt;
+    ssl_certificate_key /etc/nginx/ssl/your_private.key;
+    ssl_trusted_certificate /etc/nginx/ssl/ca_bundle.crt;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    root /var/www/web1.ngd.com/public_html;
     index index.php;
-
-    ssl_certificate /etc/nginx/ssl/web1.ngd.com/fullchain.crt;
-    ssl_certificate_key /etc/nginx/ssl/web1.ngd.com/server.key;
-
-    add_header Strict-Transport-Security "max-age=31536000" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
 
     location ~ \.php$ {
         include fastcgi_params;
@@ -135,22 +197,61 @@ server {
 }
 ```
 
+### Reload
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
 ---
 
-## ⚡ 7. Nginx Performance Tuning
+# 🧪 9. Test HTTPS
+```bash
+curl -k https://web1.ngd.com
+```
 
-📄 `/etc/nginx/nginx.conf`
+---
+
+# 🛡️ 10. Security Hardening
+
+## Pre-check
+```bash
+sudo nginx -t
+sudo ss -tulnp
+```
+
+## Disable server tokens
+```nginx
+server_tokens off;
+```
+
+## Security headers
+```nginx
+add_header X-Frame-Options "SAMEORIGIN";
+add_header X-Content-Type-Options "nosniff";
+add_header X-XSS-Protection "1; mode=block";
+```
+
+## File restrictions
+```nginx
+location ~* \.(env|git) {
+    deny all;
+}
+```
+
+---
+
+# ⚡ 11. Nginx Performance Tuning
+
+Edit:
+```bash
+sudo nano /etc/nginx/nginx.conf
+```
 
 ```nginx
 worker_processes auto;
-worker_connections 2048;
-
-keepalive_timeout 15;
-keepalive_requests 100;
-
-sendfile on;
-tcp_nopush on;
-tcp_nodelay on;
+worker_connections 4096;
+keepalive_timeout 65;
 
 gzip on;
 gzip_types text/plain text/css application/json application/javascript;
@@ -158,98 +259,71 @@ gzip_types text/plain text/css application/json application/javascript;
 
 ---
 
-## 🐘 8. PHP-FPM Tuning
+# ⚡ 12. PHP Performance Tuning
 
-📄 `/etc/php-fpm.d/www.conf`
-
-```ini
-pm = ondemand
-pm.max_children = 20
-pm.process_idle_timeout = 10s
-pm.max_requests = 500
+Edit:
+```bash
+sudo nano /etc/php-fpm.d/www.conf
 ```
 
-📄 `/etc/php.ini`
-
 ```ini
-memory_limit = 256M
-upload_max_filesize = 20M
-post_max_size = 20M
-max_execution_time = 60
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 10
+```
 
+Enable OPcache:
+```ini
 opcache.enable=1
 opcache.memory_consumption=128
 opcache.max_accelerated_files=10000
 ```
 
----
-
-## 🛡️ 9. Security Hardening
-
-- ❌ Disable version exposure
-```nginx
-server_tokens off;
-```
-
-- 🔒 Secure PHP
-```ini
-expose_php = Off
-display_errors = Off
-```
-
-- 🚫 Block hidden files
-```nginx
-location ~ /\. {
-    deny all;
-}
-```
-
----
-
-## 🧪 10. Validation
-
+Restart:
 ```bash
-nginx -t
-systemctl reload nginx
-curl -I https://web1.ngd.com
+sudo systemctl restart php-fpm
 ```
 
 ---
 
-## 🧰 11. Troubleshooting
+# 🧯 13. Troubleshooting
 
-### ❗ 502 Bad Gateway
+## Check logs
 ```bash
-systemctl status php-fpm
+sudo journalctl -xe
+sudo tail -f /var/log/nginx/error.log
 ```
 
-### ❗ SELinux issues
+## Test config
 ```bash
-ausearch -m avc -ts recent
+sudo nginx -t
 ```
 
-### ❗ Firewall issues
+## PHP issues
 ```bash
-firewall-cmd --list-all
+sudo systemctl status php-fpm
 ```
 
----
-
-## 🔁 12. Rollback
-
+## SELinux issues
 ```bash
-mv /etc/nginx/conf.d/web1.ngd.com.conf /tmp/
-nginx -t
-systemctl reload nginx
+sudo ausearch -m AVC -ts recent
 ```
 
 ---
 
-## 📎 Notes
-- ✅ Keep SELinux enforcing
-- 🔐 Always protect private keys
-- 🔄 Regular updates recommended
+# ✅ Final Validation Checklist
+- [ ] Nginx running
+- [ ] PHP-FPM running
+- [ ] HTTP working
+- [ ] HTTPS working
+- [ ] SELinux enforced
+- [ ] Firewall open
+- [ ] Logs clean
 
 ---
 
-# 🎯 End of Runbook
+# 🎯 Conclusion
+You now have a **secure, optimized, production-ready Nginx + PHP 8.2 stack**.
+
