@@ -138,10 +138,7 @@ echo "<?php phpinfo(); ?>" | sudo tee /var/www/web1.ngd.com/public_html/index.ph
 
 ### Nginx Config
 ```bash
-sudo nano /etc/nginx/conf.d/web1.ngd.com.conf
-```
-
-```nginx
+sudo cat > /etc/nginx/conf.d/web1.ngd.com.conf <<'EOF'
 server {
     listen 80;
     server_name web1.ngd.com;
@@ -163,6 +160,7 @@ server {
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     }
 }
+EOF
 ```
 
 ### Test & Reload
