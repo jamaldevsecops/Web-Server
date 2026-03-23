@@ -163,14 +163,14 @@ server {
 EOF
 ```
 
-### Nginx Config (PHP-FPM listen on TCP 127.0.0.1:9000)
-The default PHP-FPM pool often listens on a Unix socket. For a simple nginx config, switch it to TCP:
+### If PHP-FPM listens on TCP 127.0.0.1:9000  
+The default PHP-FPM pool often listens on a Unix socket. For a simple nginx config, switch it to TCP:  
 ```bash
 cp -a /etc/php-fpm.d/www.conf /etc/php-fpm.d/www.conf.bak
 sed -i 's|^listen = .*|listen = 127.0.0.1:9000|' /etc/php-fpm.d/www.conf
 ```
-Then `fastcgi_pass unix:/run/php-fpm/www.sock;` to `fastcgi_pass 127.0.0.1:9000;` in Virtual Host Configuration. 
-Restart both services:
+Then `fastcgi_pass unix:/run/php-fpm/www.sock;` to `fastcgi_pass 127.0.0.1:9000;` in Virtual Host Configuration.   
+Restart both services:  
 ```
 nginx -t
 systemctl restart php-fpm
