@@ -146,8 +146,8 @@ server {
     root /var/www/web1.ngd.com/public_html;
     index index.php index.html;
 
-    access_log /var/www/web1.ngd.com/logs/access.log;
-    error_log /var/www/web1.ngd.com/logs/error.log;
+    access_log /var/log/nginx/web1.ngd.com_access.log;
+    error_log /var/log/nginx/web1.ngd.com_error.log;
 
     location / {
         try_files $uri $uri/ =404;
