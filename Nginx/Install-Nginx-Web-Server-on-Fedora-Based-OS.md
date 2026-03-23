@@ -44,8 +44,10 @@ sudo systemctl status nginx
 
 ## 📍 RHEL 8
 ```bash
-sudo dnf install -y epel-release
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm
+subscription-manager repos --enable codeready-builder-for-rhel-9-x86_64-rpms
+dnf install -y yum-utils
 sudo dnf module reset php -y
 sudo dnf module enable php:remi-8.2 -y
 sudo dnf install -y php php-fpm php-cli php-mysqlnd php-opcache php-gd php-curl php-mbstring php-xml
@@ -53,13 +55,26 @@ sudo dnf install -y php php-fpm php-cli php-mysqlnd php-opcache php-gd php-curl 
 
 ## 📍 RHEL 9
 ```bash
-sudo dnf install -y epel-release
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm
+subscription-manager repos --enable codeready-builder-for-rhel-9-x86_64-rpms
+dnf install -y yum-utils
 sudo dnf module reset php -y
 sudo dnf module enable php:remi-8.2 -y
 sudo dnf install -y php php-fpm php-cli php-mysqlnd php-opcache php-gd php-curl php-mbstring php-xml
 ```
 
+## 📍 Alma Linux 8/9
+```bash
+EL_VER=$(rpm -E %rhel)
+sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${EL_VER}.noarch.rpm
+sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-${EL_VER}.rpm
+sudo dnf config-manager --set-enabled crb
+sudo dnf install -y yum-utils
+sudo dnf module reset php -y
+sudo dnf module enable php:remi-8.2 -y
+sudo dnf install -y php php-fpm php-cli php-mysqlnd php-opcache php-gd php-curl php-mbstring php-xml
+```
 ### ▶️ Enable PHP-FPM
 ```bash
 sudo systemctl enable php-fpm
