@@ -75,10 +75,17 @@ sudo dnf module reset php -y
 sudo dnf module enable php:remi-8.2 -y
 sudo dnf install -y php php-fpm php-cli php-mysqlnd php-opcache php-gd php-curl php-mbstring php-xml
 ```
+
 ### ▶️ Enable PHP-FPM
 ```bash
 sudo systemctl enable php-fpm
 sudo systemctl start php-fpm
+```
+
+ ### 🧪 Check the Version
+ ```bash
+php -v
+nginx -v
 ```
 
 ---
