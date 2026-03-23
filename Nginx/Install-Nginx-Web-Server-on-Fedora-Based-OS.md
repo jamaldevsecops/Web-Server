@@ -33,9 +33,9 @@ sudo dnf update -y
 # 🟢 1. Nginx Installation
 ```bash
 sudo dnf install -y nginx
-sudo systemctl enable nginx
-sudo systemctl start nginx
-sudo systemctl status nginx
+sudosystemctl enable --now nginx
+sudo systemctl start --now nginx
+systemctl status nginx --no-pager
 ```
 
 ---
@@ -78,8 +78,9 @@ sudo dnf install -y php php-fpm php-cli php-mysqlnd php-opcache php-gd php-curl 
 
 ### ▶️ Enable PHP-FPM
 ```bash
-sudo systemctl enable php-fpm
-sudo systemctl start php-fpm
+sudo systemctl enable --now php-fpm
+sudo systemctl start --now php-fpm
+sudo systemctl status php-fpm --no-pager
 ```
 
  ### 🧪 Check the Version
@@ -96,12 +97,6 @@ sudo setsebool -P httpd_can_network_connect 1
 sudo setsebool -P httpd_execmem 1
 ```
 
-### Fix permissions for web root
-```bash
-sudo chcon -R -t httpd_sys_content_t /var/www
-sudo chcon -R -t httpd_sys_rw_content_t /var/www
-```
-
 ---
 
 # 🔥 4. Firewalld Configuration
@@ -109,6 +104,7 @@ sudo chcon -R -t httpd_sys_rw_content_t /var/www
 sudo firewall-cmd --permanent --add-service=http
 sudo firewall-cmd --permanent --add-service=https
 sudo firewall-cmd --reload
+firewall-cmd --list-services
 ```
 
 ---
@@ -129,10 +125,10 @@ sudo mkdir -p /var/www/web1.ngd.com/public_html
 sudo mkdir -p /var/www/web1.ngd.com/logs
 ```
 
-### Permissions
+### SELinux Configuration && Permissions
 ```bash
-sudo chown -R nginx:nginx /var/www/web1.ngd.com
-sudo chmod -R 755 /var/www
+sudo semanage fcontext -a -t httpd_sys_content_t "/var/www/web1.ngd.com(/.*)?"
+sudo restorecon -Rv /var/www/web1.ngd.com
 ```
 
 ### Create index file
