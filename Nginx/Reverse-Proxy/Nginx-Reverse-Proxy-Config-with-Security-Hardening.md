@@ -127,6 +127,40 @@ Root Certificate
 
 ---
 
+# 📊 SSL Validation
+
+## OpenSSL
+
+```bash
+openssl s_client -connect example.com:443 -status
+```
+
+## Nmap
+
+```bash
+nmap --script ssl-enum-ciphers -p 443 example.com
+```
+
+## testssl.sh
+
+```bash
+./testssl.sh https://example.com
+```
+
+## SSL Labs
+
+Target:
+
+```text
+Grade A or A+
+Forward Secrecy: Yes
+TLS 1.2: Yes
+TLS 1.3: Yes
+OCSP Stapling: Yes
+```
+
+---
+
 # 🔒 TLS Hardening
 
 ## Recommended Protocols
@@ -538,6 +572,40 @@ server {
 ```
 
 ---
+
+# 🔎 OCSP Troubleshooting
+
+Verify OCSP URL:
+
+```bash
+openssl x509 -in domain.crt -noout -ocsp_uri
+```
+
+Check responder:
+
+```bash
+curl -I http://ocsp.example-ca.com
+```
+
+Validate response:
+
+```bash
+openssl ocsp \
+-issuer intermediate.crt \
+-cert domain.crt \
+-url http://ocsp-url-from-certificate \
+-text
+```
+
+Expected:
+
+```text
+Response verify OK
+Cert Status: good
+```
+
+---
+
 
 # ✅ Validation Checklist
 
