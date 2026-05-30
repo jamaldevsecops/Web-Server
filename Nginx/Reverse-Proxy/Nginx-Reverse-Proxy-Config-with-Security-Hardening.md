@@ -141,12 +141,6 @@ openssl s_client -connect example.com:443 -status
 nmap --script ssl-enum-ciphers -p 443 example.com
 ```
 
-## testssl.sh
-
-```bash
-./testssl.sh https://example.com
-```
-
 ## SSL Labs
 
 Target:
