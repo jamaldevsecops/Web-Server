@@ -7,27 +7,29 @@ This guide provides a production-ready Nginx reverse proxy configuration pattern
 ### 🏗️ Architecture
 
 ```text
-Internet
-    │
-    ▼
-┌─────────────────┐
-│  Nginx Proxy    │
-│ TLS Termination │
-│ Security Layer  │
-└────────┬────────┘
-         │ HTTP
-         ▼
-┌─────────────────┐
-│ Apache Backend  │
-│ WordPress       │
-│ PHP             │
-└─────────────────┘
+                     Internet
+                         │
+                         ▼
+              ┌───────────────────┐
+              │   Nginx Proxy     │
+              │ TLS Termination   │
+              │ Security Headers  │
+              │ Access Control    │
+              └─────────┬─────────┘
+                        │
+                        ▼
+              ┌───────────────────┐
+              │ Apache Backend    │
+              │ PHP-FPM / ModPHP  │
+              │ WordPress         │
+              └───────────────────┘
 ```
 
 ---
 
 # 🎯 Objectives
 
+- Certificate architecture explained
 - TLS 1.2 / TLS 1.3 only
 - Strong cipher suites
 - OCSP Stapling
@@ -37,6 +39,91 @@ Internet
 - WordPress hardening
 - Information disclosure reduction
 - Basic attack surface reduction
+
+---
+
+# 🔐 Certificate File Structure
+
+## Server Certificate Components
+
+Typical CA delivery:
+
+```text
+domain.crt
+intermediate.crt
+root.crt
+private.key
+```
+
+---
+
+# 📜 Generate fullchain.crt
+
+The file served to browsers should contain:
+
+```text
+Server Certificate
++
+Intermediate Certificate
+```
+
+Example:
+
+```bash
+cat domain.crt intermediate.crt > fullchain.crt
+```
+
+Validate:
+
+```bash
+openssl crl2pkcs7 -nocrl -certfile fullchain.crt \
+| openssl pkcs7 -print_certs -noout
+```
+
+Expected:
+
+```text
+Server Certificate
+Intermediate Certificate
+```
+
+---
+
+# 🛡️ Generate ocsp-chain.crt
+
+Used by:
+
+```nginx
+ssl_trusted_certificate
+```
+
+Should contain:
+
+```text
+Intermediate Certificate
++
+Root Certificate
+```
+
+Example:
+
+```bash
+cat intermediate.crt root.crt > ocsp-chain.crt
+```
+
+Validate:
+
+```bash
+openssl crl2pkcs7 -nocrl -certfile ocsp-chain.crt \
+| openssl pkcs7 -print_certs -noout
+```
+
+Expected:
+
+```text
+Intermediate Certificate
+Root Certificate
+```
 
 ---
 
